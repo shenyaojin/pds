@@ -1,4 +1,4 @@
-# Pressuer Diffusion Simulator
+# Pressure Diffusion Simulator
 
 ## Introduction
 
