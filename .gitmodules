@@ -1,0 +1,3 @@
+[submodule "DSS_analyzer_Mariner"]
+	path = DSS_analyzer_Mariner
+	url = https://github.com/shenyaojin/DSS_analyzer_Mariner.git
