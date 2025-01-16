@@ -1,11 +1,11 @@
 # This script is to provide the utilities for 1D pressure diffusion problem
-import numpy as np 
+import numpy as np
 import matplotlib.pyplot as plt 
 from DSS_analyzer_Mariner import Data1D_GAUGE # Load gauge data; use the dataframe to process the data
-from . import time_sampling_optimizer as tso # Load the time sampling optimizer
+import optimizer.tso as tso # Load the time sampling optimizer
 
 # Define the class for the 1D pressure diffusion problem; this class will only support single source term.
-class PDS1D_Single:
+class PDS1D_SingleSource:
     def __init__(self):
         self.mesh = None # Mesh
         self.source = None # Source term
@@ -51,7 +51,7 @@ class PDS1D_Single:
     
     def solve(self, optimizer = False, **kwargs):
         # If optimizer is false, then solve the problem with the given parameters and a given time step "dt", pass this to PDE solver.
-        if optimizer == False:
+        if not optimizer:
             # Generate the time array using t_total. If not given, then use the time array from the source term.
             if 't_total' in kwargs:
                 t_total = kwargs['t_total']
@@ -64,6 +64,9 @@ class PDS1D_Single:
                 time = np.arange(self.t0, t_total, dt)
                 print("Time array generated using the source term.")
             # Use the PDE solved defined in this library to solve the problem
-            # self.snapshot =
+            self.snapshot = np.zeros((len(time), len(self.mesh)))
+
+            # Set the initial condition
+            self.snapshot[0] = self.initial
         # TMP: Return 0 for now
         return 0

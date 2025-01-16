@@ -7,17 +7,22 @@ Library to simulate the wellbore pressure diffusion in Mariner. Should combine w
 **Keywords**:
 - 1D simulator
 - FD method
-- Using Mariner's PG data as a source
+- Using Mariner's PG data as a source / synthetic data (future work)
 - Time sampling optimizer included
 
 ## Modules
 
-- Lib
-- Examples
+- Core
+  - Define the core classes and functions
+- Optimizer
+  - Time sampling optimizer
+- Solver
+  - FD(currently) solver
+- Test
+  - Test the core functions
 
 ## Usage
 
-- TBD
 
 I'm using RCP's Midland and my personal Linux workstation, Haynesville, to develop/debug the library simultaneously; the commit would be quite often.
 
