@@ -1,0 +1,1 @@
+Don't upload testdata.npz to the git repository. It's Exxon's proprietary data.
