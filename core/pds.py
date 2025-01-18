@@ -1,8 +1,10 @@
 # This script is to provide the utilities for 1D pressure diffusion problem
+# Developed by Shenyao Jin, shenyaojin@mines.edu
 import numpy as np
 import matplotlib.pyplot as plt 
 from DSS_analyzer_Mariner import Data1D_GAUGE # Load gauge data; use the dataframe to process the data
 import optimizer.tso as tso # Load the time sampling optimizer
+from solver import matbuilder, PDEsolver_IMP, PDESolver_EXP # Load the matrix builder and PDE solver
 
 # Define the class for the 1D pressure diffusion problem; this class will only support single source term.
 class PDS1D_SingleSource:
@@ -14,8 +16,10 @@ class PDS1D_SingleSource:
         self.initial = None # Initial condition
         self.diffusivity = None # Diffusivity
         self.t0 = 0 # Initial time
+        self.sourceidx = None # Source index in the mesh; would be a single index
 
     # Define the parameters for the problem
+
     def set_mesh(self, mesh):
         self.mesh = mesh # Set mesh, 1D numpy array
 
@@ -47,10 +51,24 @@ class PDS1D_SingleSource:
         # Set initial time
         self.t0 = t0 # Initial time, float
 
+    def set_sourceidx(self, sourceidx):
+        # Set source index
+        self.sourceidx = sourceidx
+        # Check if the source index is in the mesh
+        if sourceidx not in self.mesh:
+            print("Source index is not in the mesh.")
+            return
+
+    # Print the all the parameters
+    def print(self):
+        for key, value in self.__dict__.items():
+            print(key, ":", value)
+
     # Define the function to solve the problem
-    
+
     def solve(self, optimizer = False, **kwargs):
         # If optimizer is false, then solve the problem with the given parameters and a given time step "dt", pass this to PDE solver.
+        # Implicit solver
         if not optimizer:
             # Generate the time array using t_total. If not given, then use the time array from the source term.
             if 't_total' in kwargs:
@@ -68,7 +86,43 @@ class PDS1D_SingleSource:
 
             # Set the initial condition
             self.snapshot[0] = self.initial
+        else:
+            dt_init = kwargs['dt_init']
+            if 't_total' in kwargs:
+                t_total = kwargs['t_total']
+                time = np.arange(self.t0, t_total, dt_init)
+                print("Time array generated using t_total.")
+            else:
+                t_total = (self.source.calculate_time())[-1]
 
+            self.snapshot = np.zeros((len(time), len(self.mesh)))
 
+            # Set the initial condition
+            self.snapshot[0] = self.initial
+
+        # get the intermediate time parameter, optimizer = True -> dt; optimizer = False -> dt_init
+        time_parameter = -1
+        # decide the time parameter
+        if optimizer:
+            time_parameter = dt_init
+        else:
+            time_parameter = dt
+
+        # initialize the taxis
+        taxis_tmp = [self.t0]
+
+        # start to loop through the time array
+        while taxis_tmp[-1] < t_total:
+            # Call the Matrix builder
+            A, b = matbuilder.MatrixBuilder_1D(self.mesh, self.diffusivity, self.lbc, self.rbc, self.source, self.sourceidx)
+            # Call the solver
+            if 'mode' in kwargs:
+                if kwargs['mode'] == 'implicit':
+                    snapshot_upd = PDEsolver_IMP.solver_implicit(A, b, mode='crank-nicolson') #call the implicit solver
+                else:
+                    snapshot_upd = PDESolver_EXP.solver_explicit(A, b) #call the explicit solver
+            else:
+                snapshot_upd = PDEsolver_IMP.solver_implicit(A, b, mode='crank-nicolson') # Default mode is implicit solver
+            # Update the snapshot, do it tomorrow :)
         # TMP: Return 0 for now
         return 0

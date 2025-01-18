@@ -6,3 +6,5 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 import scipy.linalg as la
 
+def solver_implicit(A, b, **kwargs):
+    return 0
