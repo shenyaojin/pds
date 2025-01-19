@@ -33,8 +33,8 @@ def matrix_builder_1d_single_source(pds1d, dt):
         A[iter, iter] = 1 + 2*alpha[iter]
         A[iter, iter+1] = -alpha[iter]
 
-    # Fill the vector b, should be the snapshot of the previous time step
-    b = pds1d.snapshot[-1]
+    # Fill the vector b, should be the snapshot of the previous time step. Use copy to avoid the reference
+    b = pds1d.snapshot[-1].copy()
 
     # Apply the boundary conditions
     # Scan the left boundary
@@ -48,12 +48,12 @@ def matrix_builder_1d_single_source(pds1d, dt):
 
     # Scan the right boundary
     if pds1d.rbc == 'Dirichlet':
-        A[nx-1, nx-1] = 1
-        b[nx-1] = 0
+        A[-1, -1] = 1
+        b[-1] = 0
     elif pds1d.rbc == 'Neumann':
-        A[nx-1, nx-1] = -1
-        A[nx-1, nx-2] = 1
-        b[nx-1] = 0
+        A[-1, -1] = -1
+        A[-1, -2] = 1
+        b[-1] = 0
 
     # Apply the source term
     # Get the source value from PG data

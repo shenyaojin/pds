@@ -99,13 +99,11 @@ class PDS1D_SingleSource:
             if 't_total' in kwargs:
                 t_total = kwargs['t_total']
                 dt = kwargs['dt']
-                time = np.arange(self.t0, t_total, dt)
                 print("Time array generated using t_total.")
                 self.history.append("Time array generated using t_total.")
             else:
                 dt = kwargs['dt']
                 t_total = (self.source.calculate_time())[-1] # get the last time from the source term
-                time = np.arange(self.t0, t_total, dt)
                 print("Time array generated using the source term.")
                 self.history.append("Time array generated using the source term.")
             # Initialize the snapshot
@@ -117,7 +115,6 @@ class PDS1D_SingleSource:
             dt_init = kwargs['dt_init']
             if 't_total' in kwargs:
                 t_total = kwargs['t_total']
-                time = np.arange(self.t0, t_total, dt_init)
                 print("Time array generated using t_total.")
             else:
                 t_total = (self.source.calculate_time())[-1]
@@ -173,20 +170,21 @@ class PDS1D_SingleSource:
             else:
                 # Call the half step optimizer, then estimate the error
                 # Call the Matrix builder to get the matrix for the half step
-                A_half, b_half = matbuilder.matrix_builder_1d_single_source(self, time_parameter / 2)
+                A_half, b_half = matbuilder.matrix_builder_1d_single_source(self, time_parameter/2)
                 snapshot_middle_tmp = PDEsolver_IMP.solver_implicit(A_half, b_half, solver='numpy')
-                # Store this tmp snapshot to the list
+                # Store this tmp snapshot to the list. Only snapshot is needed; t is not needed for half step.
                 self.snapshot.append(snapshot_middle_tmp)
+
                 # then call the matrix builder again to get the matrix for the full step
-                A_full, b_full = matbuilder.matrix_builder_1d_single_source(self, time_parameter / 2)
+                A_full, b_full = matbuilder.matrix_builder_1d_single_source(self, time_parameter/2)
                 snapshot_full = PDEsolver_IMP.solver_implicit(A_full, b_full, solver='numpy')
                 # Delete the tmp snapshot
                 del self.snapshot[-1]
                 # Call the optimizer to 1. decide whether to accept the full step solution; 2. decide the next time
                 # step size; 3. update the snapshot list (if accepted); if not accepted, decrease the time step size
                 # and redo the full step solution. 4. Record the log.
-                time_parameter = tso.time_sampling_optimizer(self, snapshot_full, snapshot_middle_tmp, time_parameter,
-                                                                tol=1e-3, **kwargs)
+                time_parameter = tso.time_sampling_optimizer(self, snapshot_upd, snapshot_full, time_parameter,
+                                                             **kwargs)
                 # Print the progress if print_progress is True
                 if 'print_progress' in kwargs:
                     if kwargs['print_progress']:
@@ -206,6 +204,10 @@ class PDS1D_SingleSource:
         msg = " ".join(map(str, args)) + f" | Time: {time_now}"
         # Append the formatted message to the history
         self.history.append(msg)
+
+    def print_log(self):
+        for msg in self.history:
+            print(msg)
 
     # Solution data processing
     def get_solution(self):
