@@ -2,8 +2,7 @@ import numpy as np
 from DSS_analyzer_Mariner import Data1D_GAUGE
 from core import pds
 
-
-def MatrixBuilder_1D_SingleSource(pds1d, dt):
+def matrix_builder_1d_single_source(pds1d, dt):
     """
     Build the matrix for the 1D diffusion problem with a single source term.
     Args:

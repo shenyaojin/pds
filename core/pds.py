@@ -149,7 +149,7 @@ class PDS1D_SingleSource:
 
             # Full step solution. For the non-optimizer case, only full step solution is needed.
             # Call the Matrix builder
-            A, b = matbuilder.MatrixBuilder_1D_SingleSource(self, time_parameter)
+            A, b = matbuilder.matrix_builder_1d_single_source(self, time_parameter)
             # Call the solver, get an updated snapshot
             if 'mode' in kwargs:
                 if kwargs['mode'] == 'implicit':
@@ -172,8 +172,26 @@ class PDS1D_SingleSource:
                         print("Time:", self.taxis[-1], "Source term:", source_val)
             else:
                 # Call the half step optimizer, then estimate the error
-                # I'll implement this later
-                return 0
+                # Call the Matrix builder to get the matrix for the half step
+                A_half, b_half = matbuilder.matrix_builder_1d_single_source(self, time_parameter / 2)
+                snapshot_middle_tmp = PDEsolver_IMP.solver_implicit(A_half, b_half, solver='numpy')
+                # Store this tmp snapshot to the list
+                self.snapshot.append(snapshot_middle_tmp)
+                # then call the matrix builder again to get the matrix for the full step
+                A_full, b_full = matbuilder.matrix_builder_1d_single_source(self, time_parameter / 2)
+                snapshot_full = PDEsolver_IMP.solver_implicit(A_full, b_full, solver='numpy')
+                # Delete the tmp snapshot
+                del self.snapshot[-1]
+                # Call the optimizer to 1. decide whether to accept the full step solution; 2. decide the next time
+                # step size; 3. update the snapshot list (if accepted); if not accepted, decrease the time step size
+                # and redo the full step solution. 4. Record the log.
+                time_parameter = tso.time_sampling_optimizer(self, snapshot_full, snapshot_middle_tmp, time_parameter,
+                                                                tol=1e-3, **kwargs)
+                # Print the progress if print_progress is True
+                if 'print_progress' in kwargs:
+                    if kwargs['print_progress']:
+                        print("Time:", self.taxis[-1], "Source term:", source_val)
+
         # Convert the snapshot/taxis to numpy array
         self.snapshot = np.array(self.snapshot)
         self.taxis = np.array(self.taxis)

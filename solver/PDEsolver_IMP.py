@@ -30,7 +30,7 @@ def solver_implicit(A, b, **kwargs):
     elif solver == 'numpy':
         x = la.solve(A, b)
     elif solver == 'direct':
-        x = np.linalg.solve(A, b)
+        x = np.linalg.solve(A, b) # Will be removed in the future
     else:
         raise ValueError('Invalid solver type.')
 
