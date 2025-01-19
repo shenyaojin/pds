@@ -2,12 +2,11 @@
 # Developed by Shenyao Jin, shenyaojin@mines.edu
 import numpy as np
 import matplotlib.pyplot as plt
-from nltk.corpus import reuters
-from time import time
-
+from datetime import datetime
 from DSS_analyzer_Mariner import Data1D_GAUGE # Load gauge data; use the dataframe to process the data
 import optimizer.tso as tso # Load the time sampling optimizer
 from solver import matbuilder, PDEsolver_IMP, PDESolver_EXP # Load the matrix builder and PDE solver
+
 
 # Define the class for the 1D pressure diffusion problem; this class will only support single source term.
 class PDS1D_SingleSource:
@@ -25,7 +24,6 @@ class PDS1D_SingleSource:
         self.history = [] # History of the solution
 
     # Define the parameters for the problem
-
     def set_mesh(self, mesh):
         self.mesh = mesh # Set mesh, 1D numpy array
         self.history.append("Mesh set done.")
@@ -56,9 +54,19 @@ class PDS1D_SingleSource:
         self.history.append("Initial condition set done.")
 
     def set_diffusivity(self, diffusivity):
-        # Set diffusivity
-        self.diffusivity = diffusivity # 1D array of diffusivity having same length as mesh array.
-        self.history.append("Diffusivity set done.")
+        """
+        Set diffusivity for the problem.
+        If a single value is provided, broadcast it to the length of the mesh.
+        """
+        if isinstance(diffusivity, (int, float)):  # Check if diffusivity is a single number
+            self.diffusivity = np.full(len(self.mesh), diffusivity)
+            print("Diffusivity is a single scalar value, broadcasted to the mesh length.")
+        elif isinstance(diffusivity, (list, np.ndarray)) and len(diffusivity) == len(
+                self.mesh):  # Check for proper length
+            self.diffusivity = np.array(diffusivity)
+        else:
+            raise ValueError(
+                "Diffusivity must be either a single scalar value or an array of the same length as the mesh.")
 
     def set_t0(self, t0):
         # Set initial time
@@ -80,8 +88,7 @@ class PDS1D_SingleSource:
         for key, value in self.__dict__.items():
             print(key, ":", value)
 
-    # Define the function to solve the problem
-
+    # Define the function to solve the problem; core function
     def solve(self, optimizer = False, **kwargs):
         # If optimizer is false, then solve the problem with the given parameters and a given time step "dt", pass this to PDE solver.
         # Implicit solver
@@ -105,7 +112,7 @@ class PDS1D_SingleSource:
             self.snapshot = []
 
             # Set the initial condition
-            self.snapshot[0] = self.initial
+            self.snapshot.append(self.initial)
         else:
             dt_init = kwargs['dt_init']
             if 't_total' in kwargs:
@@ -119,7 +126,7 @@ class PDS1D_SingleSource:
             self.snapshot = []
 
             # Set the initial condition
-            self.snapshot[0] = self.initial
+            self.snapshot.append(self.initial)
 
         # get the intermediate time parameter, optimizer = True -> dt; optimizer = False -> dt_init
         time_parameter = -1
@@ -130,46 +137,88 @@ class PDS1D_SingleSource:
             time_parameter = dt
 
         # initialize the taxis
-        taxis_tmp = [self.t0]
+        self.taxis = [self.t0]
 
         self.record_log("Start to solve the problem.")
 
         # start to loop through the time array
-        while taxis_tmp[-1] < t_total:
+        while self.taxis[-1] < t_total:
+            # Before the loop, get the value of source term at the current time
+            source_val = self.source.get_value_by_time(self.taxis[-1])
+            self.record_log("Time:", self.taxis[-1], "Source term:", source_val)
+
             # Full step solution. For the non-optimizer case, only full step solution is needed.
             # Call the Matrix builder
-            A, b = matbuilder.MatrixBuilder_1D(self.mesh, self.diffusivity,
-                                               self.lbc, self.rbc, self.source, self.sourceidx, time_parameter)
+            A, b = matbuilder.MatrixBuilder_1D_SingleSource(self, time_parameter)
             # Call the solver, get an updated snapshot
             if 'mode' in kwargs:
                 if kwargs['mode'] == 'implicit':
-                    snapshot_upd = PDEsolver_IMP.solver_implicit(A, b, mode='crank-nicolson') #call the implicit solver
+                    snapshot_upd = PDEsolver_IMP.solver_implicit(A, b, solver='numpy') #call the implicit solver
                 else:
                     snapshot_upd = PDESolver_EXP.solver_explicit(A, b) #call the explicit solver
             else:
                 # Default mode is implicit solver
-                snapshot_upd = PDEsolver_IMP.solver_implicit(A, b, mode='crank-nicolson')
+                snapshot_upd = PDEsolver_IMP.solver_implicit(A, b, solver='numpy')
 
             # If no optimizer, append the snapshot to the list
             if not optimizer:
                 self.snapshot.append(snapshot_upd)
                 # Update the time
-                taxis_tmp.append(taxis_tmp[-1] + time_parameter)
-                self.record_log("Full step solution done. Time:", taxis_tmp[-1])
+                self.taxis.append(self.taxis[-1] + time_parameter)
+                self.record_log("Full step solution done. taxis[-1]=", self.taxis[-1])
+                # Print the progress if print_progress is True
+                if 'print_progress' in kwargs:
+                    if kwargs['print_progress']:
+                        print("Time:", self.taxis[-1], "Source term:", source_val)
             else:
                 # Call the half step optimizer, then estimate the error
                 # I'll implement this later
                 return 0
-        # After the loop, update the taxis
-        self.taxis = taxis_tmp
-        self.record_log("Problem solved.")
+        # Convert the snapshot/taxis to numpy array
+        self.snapshot = np.array(self.snapshot)
+        self.taxis = np.array(self.taxis)
 
-    # Message function -> History
-    def record_log(self, text):
-        # get time
-        time_now = time()
-        # append the text to the history
-        msg = text + "time:", time_now
+        self.record_log("Problem solved")
+        print("Problem solved.")
+
+    # History recording
+    def record_log(self, *args):
+        time_now = datetime.now()
+        # Concatenate all arguments
+        msg = " ".join(map(str, args)) + f" | Time: {time_now}"
+        # Append the formatted message to the history
         self.history.append(msg)
 
     # Solution data processing
+    def get_solution(self):
+        return self.snapshot, self.taxis
+
+    def get_val_at_source_idx(self):
+        return self.snapshot[:, self.sourceidx]
+
+    def get_val_at_idx(self, idx):
+        return self.snapshot[:, idx]
+
+    def get_val_at_time(self, time):
+        idx = np.argmin(np.abs(self.taxis - time))
+        print("Closest time = ", self.taxis[idx])
+        return self.snapshot[idx]
+
+    # Plot the solution
+    def plot_solution(self, **kwargs):
+
+        # Extract cmap if given
+        if 'cmap' in kwargs:
+            cmap = kwargs['cmap']
+        else:
+            cmap = 'bwr'
+
+        plt.figure()
+        plt.imshow(self.snapshot.T, aspect='auto', cmap=cmap,
+                   extent=[self.taxis[0], self.taxis[-1], self.mesh[0], self.mesh[-1]])
+
+        # Invert the y-axis
+        plt.gca().invert_yaxis()
+        plt.xlabel("Time/s")
+        plt.ylabel("Distance/ft")
+        plt.show()

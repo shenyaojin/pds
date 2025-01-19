@@ -7,4 +7,31 @@ import scipy.sparse.linalg as spla
 import scipy.linalg as la
 
 def solver_implicit(A, b, **kwargs):
-    return 0
+    """
+    Solve the matrix using the implicit method.
+    Args:
+        A: Matrix A, 2D numpy array
+        b: Matrix b, 1D numpy array
+        **kwargs:
+            solver: str, "scipy" or "numpy" or "direct"
+    Returns:
+        x: 1D numpy array
+    """
+
+    # Get the solver type if provided
+    if 'solver' in kwargs:
+        solver = kwargs['solver']
+    else:
+        solver = 'scipy'
+
+    # Solve the matrix
+    if solver == 'scipy':
+        x = spla.spsolve(A, b)
+    elif solver == 'numpy':
+        x = la.solve(A, b)
+    elif solver == 'direct':
+        x = np.linalg.solve(A, b)
+    else:
+        raise ValueError('Invalid solver type.')
+
+    return x
