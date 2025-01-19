@@ -34,7 +34,7 @@ def matrix_builder_1d_single_source(pds1d, dt):
         A[iter, iter+1] = -alpha[iter]
 
     # Fill the vector b, should be the snapshot of the previous time step
-    b = pds.snapshot[-1]
+    b = pds1d.snapshot[-1]
 
     # Apply the boundary conditions
     # Scan the left boundary

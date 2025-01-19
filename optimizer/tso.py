@@ -22,7 +22,7 @@ def time_sampling_optimizer(pds1d, full_step_solution, half_step_solution, dt, t
     error = np.linalg.norm(full_step_solution - half_step_solution, ord=2) / np.linalg.norm(full_step_solution, ord=2)
 
     # Update the time parameter
-    updated_dt = adjust_dt(dt, tol)
+    updated_dt = adjust_dt(dt, error, tol, **kwargs)
 
     # Decide whether to accept the snapshot
     if error <= tol:
@@ -30,8 +30,23 @@ def time_sampling_optimizer(pds1d, full_step_solution, half_step_solution, dt, t
         pds1d.snapshot.append(full_step_solution)
         pds1d.taxis.append(pds1d.taxis[-1] + dt)
         pds1d.record_log("Dynamic time sampling updated. dt = ", dt, "Next loop dt will be", updated_dt, "\n")
-
+    else:
+        # The error is too large, then reject it and keep the old snapshot/taxis; update the time step
+        pds1d.record_log("Dynamic time sampling rejected. dt = ", dt, "Next loop dt will be", updated_dt, "\n")
     return dt
 
-def adjust_dt(dt, tol):
-    return 0.01
+def adjust_dt(dt, error, tol=1e-3, **kwargs):
+    safety_factor = kwargs.get('safety_factor', 0.9)
+    p             = kwargs.get('p', 2)
+    max_dt        = kwargs.get('max_dt', 40)
+    min_dt = kwargs.get('min_dt', 1e-4)
+
+    if error < 1e-14:
+        ratio = 1.0
+    else:
+        ratio = (tol / error) ** (1.0 / p)
+    # Calculate the new dt
+    dt_new = dt * safety_factor * ratio
+    # Make sure the new dt is within the range
+    dt_new = max(min_dt, min(dt_new, max_dt))
+    return dt_new

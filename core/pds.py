@@ -225,18 +225,18 @@ class PDS1D_SingleSource:
     # Plot the solution
     def plot_solution(self, **kwargs):
 
-        # Extract cmap if given
-        if 'cmap' in kwargs:
-            cmap = kwargs['cmap']
-        else:
-            cmap = 'bwr'
+        # Extract cmap from kwargs
+        cmap = kwargs.get('cmap', 'bwr')
 
         plt.figure()
         plt.imshow(self.snapshot.T, aspect='auto', cmap=cmap,
                    extent=[self.taxis[0], self.taxis[-1], self.mesh[0], self.mesh[-1]])
-
         # Invert the y-axis
         plt.gca().invert_yaxis()
         plt.xlabel("Time/s")
         plt.ylabel("Distance/ft")
         plt.show()
+
+    # Pack the result to npz that can be loaded by DSS_analyzer_Mariner
+    def pack_result(self):
+        return 0

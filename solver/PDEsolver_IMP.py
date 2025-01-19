@@ -19,10 +19,7 @@ def solver_implicit(A, b, **kwargs):
     """
 
     # Get the solver type if provided
-    if 'solver' in kwargs:
-        solver = kwargs['solver']
-    else:
-        solver = 'scipy'
+    solver = kwargs.get('solver', 'scipy')
 
     # Solve the matrix
     if solver == 'scipy':
