@@ -143,7 +143,7 @@ class PDS1D_SingleSource:
         # start to loop through the time array
         while self.taxis[-1] < t_total:
             # Before the loop, get the value of source term at the current time
-            source_val = self.source.get_value_by_time(self.taxis[-1])
+            source_val = self.source.get_value_by_time(self.taxis[-1] - self.t0)
             self.record_log("Time:", self.taxis[-1], "Source term:", source_val)
 
             # Full step solution. For the non-optimizer case, only full step solution is needed.
