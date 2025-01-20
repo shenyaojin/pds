@@ -104,7 +104,7 @@ class PDS1D_SingleSource:
                 self.history.append("Time array generated using t_total.")
             else:
                 dt = kwargs['dt']
-                t_total = (self.source.calculate_time())[-1] # get the last time from the source term
+                t_total = (self.source.calculate_time())[-1] * 3600 # get the last time from the source term
                 print("Time array generated using the source term.")
                 self.history.append("Time array generated using the source term.")
             # Initialize the snapshot
@@ -118,7 +118,8 @@ class PDS1D_SingleSource:
                 t_total = kwargs['t_total']
                 print("Time array generated using t_total.")
             else:
-                t_total = (self.source.calculate_time())[-1]
+                t_total = (self.source.calculate_time())[-1] * 3600
+                print("Time array generated using the source term.")
 
             # Initialize the snapshot
             self.snapshot = []
