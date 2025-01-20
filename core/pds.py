@@ -77,7 +77,8 @@ class PDS1D_SingleSource:
         # Set source index
         self.sourceidx = sourceidx
         # Check if the source index is in the mesh
-        if sourceidx not in self.mesh:
+        mesh_idx = np.arange(len(self.mesh))
+        if sourceidx not in mesh_idx:
             print("Source index is not in the mesh.")
             self.history.append("Source index is not in the mesh. Source index initialization failed.")
             return
