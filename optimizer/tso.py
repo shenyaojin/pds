@@ -3,7 +3,7 @@
 
 # Provide utilities for the time sampling optimizer
 import numpy as np
-from core import pds
+from ..core import pds
 
 def time_sampling_optimizer(pds1d, full_step_solution, half_step_solution, dt, tol=1e-3, *args, **kwargs):
     """
