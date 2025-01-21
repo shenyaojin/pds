@@ -242,5 +242,12 @@ class PDS1D_SingleSource:
         plt.show()
 
     # Pack the result to npz that can be loaded by DSS_analyzer_Mariner
-    def pack_result(self):
-        return 0
+    def pack_result(self, **kwargs):
+        # Extract the filename from kwargs
+        filename = kwargs.get('filename', 'result.npz')
+        mode = kwargs.get('mode', 'dss_analyzer_mariner')
+
+        if mode == 'dss_analyzer_mariner':
+            # Pack the result to npz, refer to my notes
+            # (distance, time)
+
