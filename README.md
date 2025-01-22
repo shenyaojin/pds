@@ -5,7 +5,7 @@
 Library to simulate the wellbore pressure diffusion in Mariner. Should combine with DSS analyzer.
 
 **Keywords**:
-- 1D simulator
+- 1D simulator (I'll migrate to MOOSE while facing 2D)
 - FD method
 - Using Mariner's PG data as a source / synthetic data (future work)
 - Time sampling optimizer included
