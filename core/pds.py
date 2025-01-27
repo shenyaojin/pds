@@ -250,4 +250,7 @@ class PDS1D_SingleSource:
         if mode == 'dss_analyzer_mariner':
             # Pack the result to npz, refer to my notes
             # (distance, time)
+            np.savez(filename, daxis = self.mesh, taxis = self.taxis, data = self.snapshot)
             return 0 # Return 0 for now
+        else:
+            raise ValueError("Mode must be 'dss_analyzer_mariner'.")
