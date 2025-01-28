@@ -1,11 +1,16 @@
 # This script is to provide the utilities for 1D pressure diffusion problem
 # Developed by Shenyao Jin, shenyaojin@mines.edu
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
-from ..DSS_analyzer_Mariner import Data1D_GAUGE # Load gauge data; use the dataframe to process the data
-from ..optimizer import tso as tso
-from ..solver import matbuilder, PDEsolver_IMP, PDESolver_EXP # Load the matrix builder and PDE solver
+from DSS_analyzer_Mariner import Data1D_GAUGE # Load gauge data; use the dataframe to process the data
+from optimizer import tso as tso
+from solver import matbuilder, PDEsolver_IMP, PDESolver_EXP # Load the matrix builder and PDE solver
 
 # Define the class for the 1D pressure diffusion problem; this class will only support single source term.
 # upgrade mesh that can support heterogeneous mesh.
