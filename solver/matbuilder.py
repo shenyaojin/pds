@@ -17,8 +17,11 @@ def matrix_builder_1d_single_source(pds1d, dt):
     b: 1D numpy array
     """
     # Calculate alpha; in this case, the dx is constant
-    dx = pds1d.mesh[1] - pds1d.mesh[0]
-    alpha = pds1d.diffusivity * dt / dx**2
+    # dx = pds1d.mesh[1] - pds1d.mesh[0]
+    # dx is not constant
+    dx = np.diff(pds1d.mesh) # dx is an array of length nx-1
+
+    alpha = pds1d.diffusivity[1:] * dt / dx**2 # alpha is an array of length nx-1
     nx = len(pds1d.mesh)
 
     # Define the matrix A
