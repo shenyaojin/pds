@@ -7,8 +7,10 @@ from ..DSS_analyzer_Mariner import Data1D_GAUGE # Load gauge data; use the dataf
 from ..optimizer import tso as tso
 from ..solver import matbuilder, PDEsolver_IMP, PDESolver_EXP # Load the matrix builder and PDE solver
 
-
 # Define the class for the 1D pressure diffusion problem; this class will only support single source term.
+#TODO: upgrade mesh that can support heterogeneous mesh.
+#TODO: upgrade the source term that can support multiple source terms.
+#TODO: upgrade the algorithm using Kazemi's method.
 class PDS1D_SingleSource:
     def __init__(self):
         self.mesh = None # Mesh
@@ -26,32 +28,25 @@ class PDS1D_SingleSource:
     # Define the parameters for the problem
     def set_mesh(self, mesh):
         self.mesh = mesh # Set mesh, 1D numpy array
-        self.history.append("Mesh set done.")
+        flag, msg = self._check_mesh()
+        self.history.append(msg)
 
     def set_source(self, source):
         self.source = source # Set source term, which would be the pressure gauge dataframe.
-        print("Message from pds: Source set done.\nAlso, just a reminder: please make sure the data is cropped properly.")
-        self.history.append("Source set done.")
+        flag, msg = self._check_source()
+        self.history.append(msg)
 
     def set_bcs(self, lbc='Neumann', rbc='Neumann'):
-        # Set boundary conditions, str: "Dirichlet" or "Neumann"
-        # If it's not these two, return an error message
-        if lbc not in ['Dirichlet', 'Neumann']:
-            print("Left boundary condition must be either Dirichlet or Neumann")
-            self.history.append("Left boundary condition must be either Dirichlet or Neumann")
-            return
-        if rbc not in ['Dirichlet', 'Neumann']:
-            print("Right boundary condition must be either Dirichlet or Neumann")
-            self.history.append("Right boundary condition must be either Dirichlet or Neumann")
-            return
         self.lbc = lbc # Set left boundary condition
         self.rbc = rbc
-        self.history.append("Boundary conditions set done.")
+        flag, msg = self._check_bc()
+        self.history.append(msg)
 
     def set_initial(self, initial):
         # Define the initial condition
         self.initial = initial # 1D array of initial condition having same length as mesh array.
-        self.history.append("Initial condition set done.")
+        flag, msg = self._check_initial()
+        self.history.append(msg)
 
     def set_diffusivity(self, diffusivity):
         """
@@ -67,27 +62,151 @@ class PDS1D_SingleSource:
         else:
             raise ValueError(
                 "Diffusivity must be either a single scalar value or an array of the same length as the mesh.")
+        flag, msg = self._check_diffusivity()
+        self.history.append(msg)
 
     def set_t0(self, t0):
         # Set initial time
         self.t0 = t0 # Initial time, float
-        self.history.append("Initial time set done.")
+        self.history.append(f"Initial time set done. \nThe simulation starts at {t0}.")
 
     def set_sourceidx(self, sourceidx):
         # Set source index
         self.sourceidx = sourceidx
-        # Check if the source index is in the mesh
-        mesh_idx = np.arange(len(self.mesh))
-        if sourceidx not in mesh_idx:
-            print("Source index is not in the mesh.")
-            self.history.append("Source index is not in the mesh. Source index initialization failed.")
-            return
-        self.history.append("Source index set done.")
+        flag, msg = self._check_sourceidx()
+        self.history.append(msg)
 
     # Print the all the parameters
     def print(self):
         for key, value in self.__dict__.items():
             print(key, ":", value)
+
+    # QC: self check
+    def _check_mesh(self):
+        """
+        Internal check for 'mesh'.
+        Return (True, msg) if okay,
+               (False, error_msg) otherwise.
+        """
+        if self.mesh is None:
+            return False, "Mesh is not set."
+        if not isinstance(self.mesh, np.ndarray):
+            return False, "Mesh must be a numpy array."
+        if len(self.mesh) < 2:
+            return False, "Mesh must have at least 2 points."
+        return True, "Mesh is properly set."
+
+    def _check_source(self):
+        """
+        Internal check for 'source'.
+        """
+        if self.source is None:
+            return False, "Source term is not set."
+        # Example: check that source is a DataFrame
+        # if not isinstance(self.source, pd.DataFrame):
+        #     return (False, "Source must be a pandas DataFrame.")
+
+        return True, "Source term is properly set."
+
+    def _check_bc(self):
+        """
+        Internal check for 'bc' (boundary conditions).
+        """
+        if self.lbc is None or self.rbc is None:
+            return False, "Boundary condition(s) (lbc/rbc) not set."
+        # Example of further checks:
+        # allowed_bc = ['Dirichlet', 'Neumann']
+        # if self.lbc not in allowed_bc:
+        #     return (False, f"Invalid left BC: {self.lbc}. Must be 'Dirichlet' or 'Neumann'.")
+        # if self.rbc not in allowed_bc:
+        #     return (False, f"Invalid right BC: {self.rbc}. Must be 'Dirichlet' or 'Neumann'.")
+
+        return True, "Boundary conditions are properly set."
+
+    def _check_initial(self):
+        """
+        Internal check for 'initial' condition.
+        """
+        if self.initial is None:
+            return False, "Initial condition is not set."
+        if self.mesh is None:
+            return False, "Mesh is not set. Please set the mesh first."
+        if len(self.initial) != len(self.mesh):
+            return False, "Length of initial condition array must match mesh length."
+
+        return True, "Initial condition is properly set."
+
+    def _check_diffusivity(self):
+        """
+        Internal check for 'diffusivity'.
+        """
+        if self.diffusivity is None:
+            return False, "Diffusivity is not set."
+
+        if isinstance(self.diffusivity, np.ndarray):
+            if len(self.diffusivity) != len(self.mesh):
+                return False, "Diffusivity array length must match mesh length."
+        else:
+            return False, "Diffusivity must be a numpy array or the pds frame is failed to init the diffusivity."
+
+        return True, "Diffusivity is properly set."
+
+    def _check_sourceidx(self):
+        """
+        Internal check for 'sourceidx'.
+        """
+        if self.sourceidx is None:
+            return False, "Source index is not set."
+        mesh_idx = np.arange(len(self.mesh))
+        if self.sourceidx not in mesh_idx:
+            return False, "Source index is not in the mesh."
+
+        return True, "Source index is properly set."
+
+    def self_check(self, params=None):
+        """
+        Check if specified parameters are properly set.
+        If params is None, all known parameters are checked.
+
+        :param params: None, a string, or a list of strings.
+                       E.g. 'bc', 'mesh', ['mesh', 'source'].
+        :return: True if all specified checks pass, otherwise False.
+        """
+
+        # Dictionary mapping parameter names to the corresponding check function
+        check_funcs = {
+            'mesh': self._check_mesh,
+            'source': self._check_source,
+            'bc': self._check_bc,
+            'initial': self._check_initial,
+            'diffusivity': self._check_diffusivity,
+            'sourceidx': self._check_sourceidx
+        }
+
+        # If no parameter is specified, we check them all
+        if params is None:
+            params = list(check_funcs.keys())
+        # If a single string is provided, wrap it in a list
+        elif isinstance(params, str):
+            params = [params]
+
+        all_good = True
+        for param in params:
+            if param not in check_funcs:
+                print(f"Parameter '{param}' is not recognized. Skipping.")
+                all_good = False
+                continue
+
+            # Call the check function
+            ok, msg = check_funcs[param]()
+            if not ok:
+                print(msg)
+                all_good = False
+            # If you want to see success messages, you could uncomment the next line:
+            # else:
+            #     print(msg)
+
+        return all_good
 
     # Define the function to solve the problem; core function
     def solve(self, optimizer = False, **kwargs):
@@ -251,6 +370,5 @@ class PDS1D_SingleSource:
             # Pack the result to npz, refer to my notes
             # (distance, time)
             np.savez(filename, daxis = self.mesh, taxis = self.taxis, data = self.snapshot)
-            return 0 # Return 0 for now
         else:
             raise ValueError("Mode must be 'dss_analyzer_mariner'.")
