@@ -8,9 +8,9 @@ from ..optimizer import tso as tso
 from ..solver import matbuilder, PDEsolver_IMP, PDESolver_EXP # Load the matrix builder and PDE solver
 
 # Define the class for the 1D pressure diffusion problem; this class will only support single source term.
-#TODO: upgrade mesh that can support heterogeneous mesh.
-#TODO: upgrade the source term that can support multiple source terms.
-#TODO: upgrade the algorithm using Kazemi's method.
+# upgrade mesh that can support heterogeneous mesh.
+# upgrade the source term that can support multiple source terms.
+# upgrade the algorithm using Kazemi's method.
 class PDS1D_SingleSource:
     def __init__(self):
         self.mesh = None # Mesh
@@ -114,12 +114,11 @@ class PDS1D_SingleSource:
         """
         if self.lbc is None or self.rbc is None:
             return False, "Boundary condition(s) (lbc/rbc) not set."
-        # Example of further checks:
-        # allowed_bc = ['Dirichlet', 'Neumann']
-        # if self.lbc not in allowed_bc:
-        #     return (False, f"Invalid left BC: {self.lbc}. Must be 'Dirichlet' or 'Neumann'.")
-        # if self.rbc not in allowed_bc:
-        #     return (False, f"Invalid right BC: {self.rbc}. Must be 'Dirichlet' or 'Neumann'.")
+        allowed_bc = ['Dirichlet', 'Neumann']
+        if self.lbc not in allowed_bc:
+            return False, f"Invalid left BC: {self.lbc}. Must be {allowed_bc}."
+        if self.rbc not in allowed_bc:
+            return False, f"Invalid right BC: {self.rbc}. Must be {allowed_bc}."
 
         return True, "Boundary conditions are properly set."
 
@@ -212,6 +211,11 @@ class PDS1D_SingleSource:
     def solve(self, optimizer = False, **kwargs):
         # If optimizer is false, then solve the problem with the given parameters and a given time step "dt", pass this to PDE solver.
         # Implicit solver
+
+        # do the self check before solving the problem
+        if not self.self_check():
+            print("Self check failed. Please check the parameters.")
+            return
 
         # Future plan: use decorator to enhance the function here.
         if not optimizer:
@@ -330,7 +334,7 @@ class PDS1D_SingleSource:
         for msg in self.history:
             print(msg)
 
-    # Solution data processing
+    # Solution data processing; preliminary
     def get_solution(self):
         return self.snapshot, self.taxis
 
