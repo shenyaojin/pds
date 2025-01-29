@@ -362,6 +362,7 @@ class PDS1D_SingleSource:
         # Extract method from kwargs (imshow or pcolormesh)
         method = kwargs.get('method', 'imshow')
 
+        # imshow for regular grid, pcolormesh for irregular grid
         if method == 'imshow':
             plt.figure()
             plt.imshow(self.snapshot.T, aspect='auto', cmap=cmap,
