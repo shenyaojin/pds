@@ -23,8 +23,14 @@ def matrix_builder_1d_single_source(pds1d, dt):
     # dx = pds1d.mesh[1] - pds1d.mesh[0]
     # dx is not constant
     dx = np.diff(pds1d.mesh) # dx is an array of length nx-1
+    diffusivity_eff = (2 * pds1d.diffusivity[:-1] * pds1d.diffusivity[1:] /
+                      (pds1d.diffusivity[:-1] + pds1d.diffusivity[1:]))
+    dxm = dx[:-1] # dxm is an array of length nx-2
+    dxp = dx[1:] # dxp is an array of length nx-2
 
-    alpha = pds1d.diffusivity[1:] * dt / dx**2 # alpha is an array of length nx-1
+    alpha_l = diffusivity_eff[:-1] * dt / (dxm * (dxm + dxp) / 2) # alpha is an array of length nx-1
+    alpha_r = diffusivity_eff[1:]  * dt / (dxp * (dxm + dxp) / 2) # alpha is an array of length nx-1
+
     nx = len(pds1d.mesh)
 
     # Define the matrix A
@@ -35,9 +41,9 @@ def matrix_builder_1d_single_source(pds1d, dt):
 
     # Fill the matrix A and vector b
     for iter in range(1, nx-1):
-        A[iter, iter-1] = -alpha[iter]
-        A[iter, iter] = 1 + 2*alpha[iter]
-        A[iter, iter+1] = -alpha[iter]
+        A[iter, iter-1] = - alpha_l[iter-1]
+        A[iter, iter] = 1 + alpha_l[iter-1] + alpha_r[iter-1]
+        A[iter, iter+1] = - alpha_r[iter-1]
 
     # Fill the vector b, should be the snapshot of the previous time step. Use copy to avoid the reference
     b = pds1d.snapshot[-1].copy()

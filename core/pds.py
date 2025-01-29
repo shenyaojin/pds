@@ -359,15 +359,28 @@ class PDS1D_SingleSource:
 
         # Extract cmap from kwargs
         cmap = kwargs.get('cmap', 'bwr')
+        # Extract method from kwargs (imshow or pcolormesh)
+        method = kwargs.get('method', 'imshow')
 
-        plt.figure()
-        plt.imshow(self.snapshot.T, aspect='auto', cmap=cmap,
-                   extent=[self.taxis[0], self.taxis[-1], self.mesh[0], self.mesh[-1]])
-        # Invert the y-axis
-        plt.gca().invert_yaxis()
-        plt.xlabel("Time/s")
-        plt.ylabel("Distance/ft")
-        plt.show()
+        if method == 'imshow':
+            plt.figure()
+            plt.imshow(self.snapshot.T, aspect='auto', cmap=cmap,
+                       extent=[self.taxis[0], self.taxis[-1], self.mesh[0], self.mesh[-1]])
+            # Invert the y-axis
+            plt.gca().invert_yaxis()
+            plt.xlabel("Time/s")
+            plt.ylabel("Distance/ft")
+            plt.show()
+        elif method == 'pcolormesh':
+            plt.figure()
+            plt.pcolormesh(self.taxis, self.mesh, self.snapshot.T, cmap=cmap)
+            plt.colorbar()
+            plt.xlabel("Time/s")
+            plt.ylabel("Distance/ft")
+            plt.show()
+        else:
+            raise ValueError("Method must be 'imshow' or 'pcolormesh'.")
+
 
     # Pack the result to npz that can be loaded by DSS_analyzer_Mariner
     def pack_result(self, **kwargs):
