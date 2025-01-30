@@ -1,16 +1,16 @@
 # This script is to provide the utilities for 1D pressure diffusion problem
 # Developed by Shenyao Jin, shenyaojin@mines.edu
-import sys
 import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
-from DSS_analyzer_Mariner import Data1D_GAUGE # Load gauge data; use the dataframe to process the data
 from optimizer import tso as tso
-from solver import matbuilder, PDEsolver_IMP, PDESolver_EXP # Load the matrix builder and PDE solver
+from solver import matbuilder, PDEsolver_IMP, PDESolver_EXP  # Load the matrix builder and PDE solver
+from DSS_analyzer_Mariner import Data1D_GAUGE  # Load the gauge data
 
 # Define the class for the 1D pressure diffusion problem; this class will only support single source term.
 # upgrade mesh that can support heterogeneous mesh.
@@ -18,38 +18,38 @@ from solver import matbuilder, PDEsolver_IMP, PDESolver_EXP # Load the matrix bu
 # upgrade the algorithm using Kazemi's method.
 class PDS1D_SingleSource:
     def __init__(self):
-        self.mesh = None # Mesh
-        self.source = None # Source term
-        self.lbc = None # Boundary conditions: left boundary condition
-        self.rbc = None # Boundary conditions: right boundary condition
-        self.initial = None # Initial condition
-        self.diffusivity = None # Diffusivity
-        self.t0 = 0 # Initial time
-        self.taxis = None # Time axis
-        self.sourceidx = None # Source index in the mesh; would be a single index
-        self.snapshot = None # Snapshot of the solution
-        self.history = [] # History of the solution
+        self.mesh = None  # Mesh
+        self.source = None  # Source term
+        self.lbc = None  # Boundary conditions: left boundary condition
+        self.rbc = None  # Boundary conditions: right boundary condition
+        self.initial = None  # Initial condition
+        self.diffusivity = None  # Diffusivity
+        self.t0 = 0  # Initial time
+        self.taxis = None  # Time axis
+        self.sourceidx = None  # Source index in the mesh; would be a single index
+        self.snapshot = None  # Snapshot of the solution
+        self.history = []  # History of the solution
 
     # Define the parameters for the problem
     def set_mesh(self, mesh):
-        self.mesh = mesh # Set mesh, 1D numpy array
+        self.mesh = mesh  # Set mesh, 1D numpy array
         flag, msg = self._check_mesh()
         self.history.append(msg)
 
     def set_source(self, source):
-        self.source = source # Set source term, which would be the pressure gauge dataframe.
+        self.source = source  # Set source term, which would be the pressure gauge dataframe.
         flag, msg = self._check_source()
         self.history.append(msg)
 
     def set_bcs(self, lbc='Neumann', rbc='Neumann'):
-        self.lbc = lbc # Set left boundary condition
+        self.lbc = lbc  # Set left boundary condition
         self.rbc = rbc
         flag, msg = self._check_bc()
         self.history.append(msg)
 
     def set_initial(self, initial):
         # Define the initial condition
-        self.initial = initial # 1D array of initial condition having same length as mesh array.
+        self.initial = initial  # 1D array of initial condition having same length as mesh array.
         flag, msg = self._check_initial()
         self.history.append(msg)
 
@@ -72,7 +72,7 @@ class PDS1D_SingleSource:
 
     def set_t0(self, t0):
         # Set initial time
-        self.t0 = t0 # Initial time, float
+        self.t0 = t0  # Initial time, float
         self.history.append(f"Initial time set done. \nThe simulation starts at {t0}.")
 
     def set_sourceidx(self, sourceidx):
@@ -83,8 +83,25 @@ class PDS1D_SingleSource:
 
     # Print the all the parameters
     def print(self):
+        """
+        Print out a nicely formatted summary of the PDS1D_SingleSource object's attributes,
+        using np.unique for any numpy array values.
+        """
+        print("=========================================")
+        print("         PDS1D_SingleSource Info         ")
+        print("=========================================")
+
+        # Loop over all attributes in the instance dictionary
         for key, value in self.__dict__.items():
-            print(key, ":", value)
+            if isinstance(value, np.ndarray):
+                # Print shape and unique values for numpy arrays
+                unique_values = np.unique(value)
+                print(f"{key:>15}: shape={value.shape}, unique={unique_values}")
+            else:
+                # For non-array attributes, just print the value
+                print(f"{key:>15}: {value}")
+
+        print("=========================================")
 
     # QC: self check
     def _check_mesh(self):
@@ -213,7 +230,7 @@ class PDS1D_SingleSource:
         return all_good
 
     # Define the function to solve the problem; core function
-    def solve(self, optimizer = False, **kwargs):
+    def solve(self, optimizer=False, **kwargs):
         # If optimizer is false, then solve the problem with the given parameters and a given time step "dt", pass this to PDE solver.
         # Implicit solver
 
@@ -232,7 +249,7 @@ class PDS1D_SingleSource:
                 self.history.append("Time array generated using t_total.")
             else:
                 dt = kwargs['dt']
-                t_total = (self.source.calculate_time())[-1] * 3600 # get the last time from the source term
+                t_total = (self.source.calculate_time())[-1] * 3600  # get the last time from the source term
                 print("Time array generated using the source term.")
                 self.history.append("Time array generated using the source term.")
             # Initialize the snapshot
@@ -280,9 +297,9 @@ class PDS1D_SingleSource:
             # Call the solver, get an updated snapshot
             if 'mode' in kwargs:
                 if kwargs['mode'] == 'implicit':
-                    snapshot_upd = PDEsolver_IMP.solver_implicit(A, b, solver='numpy') #call the implicit solver
+                    snapshot_upd = PDEsolver_IMP.solver_implicit(A, b, solver='numpy')  # call the implicit solver
                 else:
-                    snapshot_upd = PDESolver_EXP.solver_explicit(A, b) #call the explicit solver
+                    snapshot_upd = PDESolver_EXP.solver_explicit(A, b)  # call the explicit solver
             else:
                 # Default mode is implicit solver
                 snapshot_upd = PDEsolver_IMP.solver_implicit(A, b, solver='numpy')
@@ -300,13 +317,13 @@ class PDS1D_SingleSource:
             else:
                 # Call the half step optimizer, then estimate the error
                 # Call the Matrix builder to get the matrix for the half step
-                A_half, b_half = matbuilder.matrix_builder_1d_single_source(self, time_parameter/2)
+                A_half, b_half = matbuilder.matrix_builder_1d_single_source(self, time_parameter / 2)
                 snapshot_middle_tmp = PDEsolver_IMP.solver_implicit(A_half, b_half, solver='numpy')
                 # Store this tmp snapshot to the list. Only snapshot is needed; t is not needed for half step.
                 self.snapshot.append(snapshot_middle_tmp)
 
                 # then call the matrix builder again to get the matrix for the full step
-                A_full, b_full = matbuilder.matrix_builder_1d_single_source(self, time_parameter/2)
+                A_full, b_full = matbuilder.matrix_builder_1d_single_source(self, time_parameter / 2)
                 snapshot_full = PDEsolver_IMP.solver_implicit(A_full, b_full, solver='numpy')
                 # Delete the tmp snapshot
                 del self.snapshot[-1]
@@ -382,7 +399,6 @@ class PDS1D_SingleSource:
         else:
             raise ValueError("Method must be 'imshow' or 'pcolormesh'.")
 
-
     # Pack the result to npz that can be loaded by DSS_analyzer_Mariner
     def pack_result(self, **kwargs):
         # Extract the filename from kwargs
@@ -392,6 +408,119 @@ class PDS1D_SingleSource:
         if mode == 'dss_analyzer_mariner':
             # Pack the result to npz, refer to my notes
             # (distance, time)
-            np.savez(filename, daxis = self.mesh, taxis = self.taxis, data = self.snapshot)
+            np.savez(filename, daxis=self.mesh, taxis=self.taxis, data=self.snapshot)
         else:
             raise ValueError("Mode must be 'dss_analyzer_mariner'.")
+
+
+# Multiple source term framework inherits from the single source term framework
+class PDS1D_MultiSource(PDS1D_SingleSource):
+    # Define the class for the 1D pressure diffusion problem; this class will only support multiple source terms.
+
+    def set_sourceidx(self, sourceidx):
+        # Set source index
+        super().set_sourceidx(sourceidx)
+        # Convert to numpy array
+        self.sourceidx = np.array(self.sourceidx) # Convert to numpy array for future use.
+
+    def _check_source(self):
+        """
+        Internal check for 'source'.
+        """
+        if self.source is None:
+            return False, "Source term is not set."
+
+        # check the type of source, should be a list
+        if not isinstance(self.source, list):
+            return False, "Source term must be a list."
+
+        # check the type of each source term, should be a DataFrame
+        for source_iter in self.source:
+            if not isinstance(source_iter, Data1D_GAUGE.Data1D_GAUGE):
+                return False, "Each source term must be a pandas DataFrame."
+
+
+        # Check the max time of the source term list, are they the same?
+
+        return True, "Source term is properly set."
+
+    def _check_sourceidx(self):
+        """
+        Args:
+            self: source idx
+
+        Returns:
+            bool + msg
+        """
+
+        if self.sourceidx is None:
+            return False, "Source index is not set."
+        mesh_idx = np.arange(len(self.mesh))
+
+        # Check if the source index is a single value
+        if isinstance(self.sourceidx, int):
+            return False, ("Source index must be a list of integers. If you want to set a single source index, please "
+                           "use PDS1D_SingleSource.")
+
+        # Check if the source index in the numpy array are integers
+        for idx_iter in self.sourceidx:
+            if isinstance(idx_iter, int):
+                return False, "Source index must be a list of integers."
+
+        for idx_iter in self.sourceidx:
+            if idx_iter not in mesh_idx:
+                return False, "Source index is not in the mesh."
+
+        # if source is set:
+        if self.source is not None:
+            if len(self.sourceidx) != len(self.source):
+                return False, "Source index and source term length do not match."
+
+        return True, "Source index is properly set."
+
+    # Solve the problem
+    def solve(self, optimizer=False, **kwargs):
+        # If optimizer is false, then solve the problem with the given parameters and a given time step "dt", pass this to PDE
+        # solver.
+
+        if not self.self_check():
+            print("Self check failed. Please check the parameters.")
+            return
+
+        if not optimizer:
+            # Generate the time array using t_total. If not given, then use the time array from the source term.
+            if 't_total' in kwargs:
+                t_total = kwargs['t_total']
+                dt = kwargs['dt']
+                print("Time array generated using t_total.")
+            else:
+                dt = kwargs['dt']
+                t_total = (self.source[0].calculate_time())[-1] * 3600
+                print("Time array generated using the source term.")
+            # Initialize the snapshot
+            self.snapshot = []
+
+            # Set the initial condition
+            self.snapshot.append(self.initial)
+        else:
+            dt_init = kwargs['dt_init']
+            if 't_total' in kwargs:
+                t_total = kwargs['t_total']
+                print("Time array generated using t_total.")
+            else:
+                t_total = (self.source[0].calculate_time())[-1] * 3600
+                print("Time array generated using the source term.")
+
+        # get the intermediate time parameter, optimizer = True -> dt; optimizer = False -> dt_init
+        time_parameter = -1
+        # Initialize the time parameter
+        if optimizer:
+            time_parameter = dt_init
+        else:
+            time_parameter = dt
+
+        # initialize the taxis
+        self.taxis = [self.t0]
+
+        self.record_log("Start to solve the problem.")
+

@@ -75,3 +75,7 @@ def matrix_builder_1d_single_source(pds1d, dt):
     b[pds1d.sourceidx] = source_value
 
     return A, b
+
+# Multiple sources
+def matrix_builder_1d_multi_source(pds1d, t):
+    return 0 # To be implemented
