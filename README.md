@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Library to simulate the wellbore pressure diffusion in Mariner. Should combine with DSS analyzer.
+Python library to simulate the wellbore pressure diffusion in Mariner. Should combine with DSS analyzer.
 
 **Keywords**:
 - 1D simulator (I'll migrate to MOOSE while facing 2D)

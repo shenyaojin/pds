@@ -412,6 +412,17 @@ class PDS1D_SingleSource:
         else:
             raise ValueError("Mode must be 'dss_analyzer_mariner'.")
 
+    def reset(self):
+        """
+        Reset all parameters to the status before solve()
+        Returns:
+            None
+        """
+
+        self.taxis = None
+        self.snapshot = None
+        self.history = []
+
 
 # Multiple source term framework inherits from the single source term framework
 class PDS1D_MultiSource(PDS1D_SingleSource):
@@ -511,6 +522,12 @@ class PDS1D_MultiSource(PDS1D_SingleSource):
                 t_total = (self.source[0].calculate_time())[-1] * 3600
                 print("Time array generated using the source term.")
 
+            # Initialize the snapshot
+            self.snapshot = []
+
+            # Set the initial condition
+            self.snapshot.append(self.initial)
+
         # get the intermediate time parameter, optimizer = True -> dt; optimizer = False -> dt_init
         time_parameter = -1
         # Initialize the time parameter
@@ -524,3 +541,65 @@ class PDS1D_MultiSource(PDS1D_SingleSource):
 
         self.record_log("Start to solve the problem.")
 
+        # start to loop through the time array
+        while self.taxis[-1] < t_total:
+            # Before the loop, get the values of multiple source terms at the current time
+            source_val = []
+            for source_iter in self.source:
+                source_val.append(source_iter.get_value_by_time(self.taxis[-1] - self.t0))
+            self.record_log("Time:", self.taxis[-1], "Source term:", source_val)
+
+            # Full step solution. For the non-optimizer case, only full step solution is needed.
+            # Call the Matrix builder
+            A, b = matbuilder.matrix_builder_1d_multi_source(self, time_parameter)
+
+            # Call the solver, get an updated snapshot
+            if 'mode' in kwargs:
+                if kwargs['mode'] == 'implicit':
+                    snapshot_upd = PDEsolver_IMP.solver_implicit(A, b, solver='numpy')
+                else:
+                    snapshot_upd = PDESolver_EXP.solver_explicit(A, b)
+            else:
+                # Default mode is implicit solver
+                snapshot_upd = PDEsolver_IMP.solver_implicit(A, b, solver='numpy')
+
+            # If no optimizer, append the snapshot to the list
+            if not optimizer:
+                self.snapshot.append(snapshot_upd)
+                # Update the time
+                self.taxis.append(self.taxis[-1] + time_parameter)
+                self.record_log("Full step solution done. taxis[-1]=", self.taxis[-1])
+                # Print the progress if print_progress is True
+                if 'print_progress' in kwargs:
+                    if kwargs['print_progress']:
+                        print("Time:", self.taxis[-1], "Source term:", source_val)
+            else:
+                # Call the half step optimizer, then estimate the error
+                # Call the Matrix builder to get the matrix for the half step
+                A_half, b_half = matbuilder.matrix_builder_1d_multi_source(self, time_parameter / 2)
+                snapshot_middle_tmp = PDEsolver_IMP.solver_implicit(A_half, b_half, solver='numpy')
+                # Store this tmp snapshot to the list. Only snapshot is needed; t is not needed for half step.
+                self.snapshot.append(snapshot_middle_tmp)
+
+                # then call the matrix builder again to get the matrix for the full step
+                A_full, b_full = matbuilder.matrix_builder_1d_multi_source(self, time_parameter / 2)
+                snapshot_full = PDEsolver_IMP.solver_implicit(A_full, b_full, solver='numpy')
+                # Delete the tmp snapshot
+                del self.snapshot[-1]
+
+                # Call the optimizer to 1. decide whether to accept the full step solution; 2. decide the next time
+                # step size; 3. update the snapshot list (if accepted); if not accepted, decrease the time step size
+                # and redo the full step solution. 4. Record the log.
+                time_parameter = tso.time_sampling_optimizer(self, snapshot_upd, snapshot_full, time_parameter,
+                                                             **kwargs)
+                # Print the progress if print_progress is True
+                if 'print_progress' in kwargs:
+                    if kwargs['print_progress']:
+                        print("Time:", self.taxis[-1], "Source term:", source_val)
+
+        # Convert the snapshot/taxis to numpy array
+        self.snapshot = np.array(self.snapshot)
+        self.taxis = np.array(self.taxis)
+
+        self.record_log("Problem solved")
+        print("Problem solved.")
