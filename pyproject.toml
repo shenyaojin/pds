@@ -1,0 +1,30 @@
+# pyproject.toml
+
+[build-system]
+# Define the build system requirements
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# Project information
+name = "pds"
+version = "0.1"
+description = "A package for solving the PDS equation"
+authors = [{name = "Shenyao Jin", email = "shenyaojin@mines.edu"}]
+
+# Project dependencies
+dependencies = [
+    "numpy~=1.26.4",
+    "matplotlib~=3.9.2",
+    "scipy~=1.13.1",
+    "pds~=0.1",
+    "setuptools~=75.1.0",
+    "python-dateutil~=2.9.0post0",
+    "pandas~=2.2.2",
+    "h5py~=3.11.0",
+    "plotly~=5.24.1"
+]
+
+[tool.setuptools.packages]
+# Use setuptools to automatically find packages
+find = {}
