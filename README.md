@@ -26,4 +26,10 @@ Python library to simulate the wellbore pressure diffusion in Mariner. Should co
 
 I'm using RCP's Midland and my personal Linux workstation, Haynesville, to develop/debug the library simultaneously; the commit would be quite often.
 
-For now, this code is for personal research use only and only accept the source term file format from Bakken Mariner. I can't promise it can run in your local environment.
+For now, this code is for personal research use only and only accepts the source term file format from Bakken Mariner. I can't promise it can run in your local environment.
+
+
+## Future plan
+
+I feel it's starting to be a complicated tool and hard to maintain multiple repos at the same time. 
+So, I decided to integrate the data analysis and simulation part into a new repository.
