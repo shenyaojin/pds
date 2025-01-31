@@ -448,7 +448,8 @@ class PDS1D_MultiSource(PDS1D_SingleSource):
         # check the type of each source term, should be a DataFrame
         for source_iter in self.source:
             if not isinstance(source_iter, Data1D_GAUGE.Data1D_GAUGE):
-                return False, "Each source term must be a mariner DataFrame."
+                datatype = type(source_iter)
+                return False, f"Each source term must be a mariner DataFrame. But got {datatype}."
 
 
         # Check the max time of the source term list, are they the same?
