@@ -8,9 +8,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
-from optimizer import tso as tso
-from solver import matbuilder, PDEsolver_IMP, PDESolver_EXP  # Load the matrix builder and PDE solver
-from DSS_analyzer_Mariner import Data1D_GAUGE  # Load the gauge data
+from src.pds.optimizer import tso as tso
+from src.solver import matbuilder  # Load the matrix builder and PDE solver
+from src.solver import PDEsolver_IMP, PDESolver_EXP
+from src.pds.DSS_analyzer_Mariner import Data1D_GAUGE
+
 
 # Define the class for the 1D pressure diffusion problem; this class will only support single source term.
 # upgrade mesh that can support heterogeneous mesh.

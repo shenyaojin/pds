@@ -26,5 +26,4 @@ dependencies = [
 ]
 
 [tool.setuptools.packages]
-# Use setuptools to automatically find packages
-find = {}
+find = { where = ["src"] }
