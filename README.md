@@ -32,4 +32,4 @@ For now, this code is for personal research use only and only accepts the source
 ## Future plan
 
 I feel it's starting to be a complicated tool and hard to maintain multiple repos at the same time. 
-So, I decided to integrate the data analysis and simulation part into a new repository. (fibeREIS)
+So, I decided to integrate the data analysis and simulation part into a new repository. (fibeRIS)
